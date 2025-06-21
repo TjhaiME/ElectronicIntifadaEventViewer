@@ -28,19 +28,52 @@ fetch('events.json')
         const map = L.map('map', {
             center: [31.9522, 35.2332], // Example: Palestine
             zoom: 7,
+            maxZoom: 22, // 👈 increase max zoom for better tap accuracy
             attributionControl: false
         });
+
+        const oldMaxZoom = 18;
+
+        map.on('zoomend', () => {
+            const zoom = map.getZoom();
+
+            let newRadius;
+            if (zoom <= oldMaxZoom) {
+                newRadius = 6; // constant size until old max zoom
+            } else {
+                // Grow gradually beyond old max zoom
+                newRadius = 6 + (zoom - oldMaxZoom) * 15.5; // tweak scale factor as needed
+            }
+
+            markerGroup.eachLayer(layer => {
+                if (layer.setRadius) {
+                    layer.setRadius(newRadius);
+                }
+            });
+        });
+
+        
+
 
         L.control.attribution({
             prefix: '<img src="Pflag.png" alt="Palestine Flag" height="20"> Data from <a href="https://electronicintifada.net/">Electronic Intifada</a><a>, events and locations extracted with 4o-mini, locations geocoded with GeoNames, there are some mistakes. Colours are PCA reduced semantic vector embeddings of the event type</a>'
         }).addTo(map);
 
 
+        // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        //     attribution: '&copy; OpenStreetMap contributors'
+        // }).addTo(map);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 22, // allow higher zoom
+            maxNativeZoom: 18, // OSM tiles usually go up to 18
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
+
         const markerGroup = L.layerGroup().addTo(map);
+
+        map.fire('zoomend');
 
         // Initialize the timeline slider
         const slider = document.getElementById('slider');
